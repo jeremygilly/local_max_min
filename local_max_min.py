@@ -10,7 +10,18 @@ Original file is located at
 Jeremy Gillbanks, 2021
 
 ##Instructions
+python path/to/local_max_min.py path/to/file/your_data.xlsx
+
+To create a virtual environment:
+1. Install pip using python get-pip.py
+2. Install virtualenv with pip install virtualenv
+3. Create virtual environment: virtualenv venv; .\venv\Scripts\activate
+4. Install libraries required: pip install -r requirements.txt
+5. Run this program: python path/to/local_max_min.py path/to/file/your_data.txt
+6. End virtual environment: deactivate
+7. End python: exit()
 """
+from os import error
 import sys, io
 import pandas as pd
 import numpy as np
@@ -30,42 +41,55 @@ def peak_finder(df, col, n = 600):# Find local peaks
     return df
 
 if __name__ == '__main__':
-    filename = sys.argv[1]
-    print('Reading excel file:', filename.split('/')[-1])
-    df = pd.read_excel(filename)
-    print('Excel file read.')
+    filepath = sys.argv[1]
+    try:
+        filename = filepath.split("\\")[-1] # for Windows \\, for mac /
+    except Exception as e:
+        filename = filepath
+
+    print('Reading txt file:', filename)
+    # df = pd.read_excel(filepath)
+    df = pd.read_csv(filepath, sep="\t", skiprows=8)
+    print('Txt file read.')
+
     columns = list(df.columns)
     print('Columns:', columns)
-
-    v = df[columns[:2]]
-
-    v = v.loc[df[columns[1]].apply(type) == float].copy()
-
+    
+    df[columns[2]] = pd.to_numeric(df[columns[2]], errors = 'coerce')
+    v = df[columns[:3]]
     try:
-        v[columns[1]] = pd.to_numeric(v[columns[1]], errors='coerce') # turns all values to floats, NaNs for strings
+        v[columns[2]] = pd.to_numeric(v[columns[2]], errors='coerce') # turns all values to floats, NaNs for strings
         v.dropna(inplace = True) # removes the NaNs in data and other text
     except KeyError as e:
         print(type(e), e)
         print(v.columns)
 
-    print('Finding the peaks.')
-    df = peak_finder(df = v, col = columns[1])
+    print('Finding the peaks...')
+    df = peak_finder(df = v, col = columns[2])
+    print('Peaks found.')
 
     # Return CSV with peaks
-    output_file = 'data.csv'
-    df.to_csv(output_file)
-    print('An output file with the max and min data has been saved to your working directory.')
-    # Plot all results
-    plt.scatter(v[columns[0]], v[columns[1]], c = 'k', s = 1)
-
-    # Plot local minima
-    plt.scatter(df[columns[0]], df['min'], c = 'c', s = 5)
-
-    # Plot local maxima
-    plt.scatter(df[columns[0]], df['max'], c = 'm', s = 5)
-
-    plt.xlabel(columns[0])
-    plt.ylabel(columns[1])
-
+    output_file = filename.split('.')[-2] + '.xlsx'
+    folder = '\\'.join(filepath.split('\\')[1:-1])
+    output_file = folder + output_file
+    df.to_excel(output_file)
+    print('An output file with the max and min data has been saved to', output_file)
     
-    plt.show()
+    # Plot all results. Note: this is extremely slow.
+    plot = 0
+    if plot == 1:
+        plt.scatter(v[columns[0]], v[columns[2]], c = 'k', s = 1)
+
+        # Plot local minima
+        plt.scatter(df[columns[0]], df['min'], c = 'c', s = 5)
+
+        # Plot local maxima
+        plt.scatter(df[columns[0]], df['max'], c = 'm', s = 5)
+
+        plt.xlabel(columns[0])
+        plt.ylabel(columns[2])
+
+        save_location = "\\".join(output_file.split("\\")[:-1])
+        print("Saving figure to", save_location)
+        plt.savefig(save_location, format='png') # This is also slow.
+        # plt.show() # This is slow!
